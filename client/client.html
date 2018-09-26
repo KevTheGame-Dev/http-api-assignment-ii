@@ -1,12 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8"/>
   <title>Our simple HTTP server</title>
   <link rel="stylesheet" type="text/css" href="/style.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
   <script type="text/babel">
+    var nameValue = '';
+    var ageValue = '';
+    const init = () => {
+      const nameField = document.querySelector('#nameField');
+      const ageField = document.querySelector('#ageField');
+      const submitUser = document.querySelector('#submitUser');
 
+      var requestValue = '';
+      
+      const handleRequest = (e) => sendAjax(e, requestValue);
+
+
+      submitUser.addEventListener('submit', (e) => {
+        nameValue = nameField.value;
+        ageValue = ageField.value;
+        
+        requestValue = '/addUser';
+        console.log(requestValue);
+        
+        handleRequest(e);
+      });
+
+      //const sendButton = document.querySelector("#send");
+      //submitUser.addEventListener('click', handleRequest);
+
+    }
+
+    const handleResponse = (e, xhr) => {
+      const content = document.querySelector("#content");
+      
+      //const requestTypeSelector = document.querySelector('#type');
+      //var requestType = requestTypeSelector.options[requestTypeSelector.selectedIndex].value;
+      var requestType = 'application/json';
+
+      var obj = '';
+      if(requestType === 'application/json'){
+        obj = JSON.parse(xhr.response);
+
+        switch(xhr.status){
+          case 200:
+            content.innerHTML = `<h3>Success</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          case 400:
+            content.innerHTML = `<h3>Bad request</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          case 401:
+            content.innerHTML = `<h3>Unauthorized request</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          case 403:
+            content.innerHTML = `<h3>Forbidden request</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          case 500:
+            content.innerHTML = `<h3>Bad request</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          case 501:
+            content.innerHTML = `<h3>Not implemented</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          case 404:
+            content.innerHTML = `<h3>Resource not found</h3> <div><p>${obj.message}</p></div>`;
+            break;
+          default:
+            content.innerHTML = `<h3>Error code not implemented</h3>`;
+            break;
+        }
+      }
+      else{
+        obj = new DOMParser().parseFromString(xhr.response, 'text/xml');
+
+        switch(xhr.status){
+          case 200:
+            content.innerHTML = `<h3>Success</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          case 400:
+            content.innerHTML = `<h3>Bad request</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          case 401:
+            content.innerHTML = `<h3>Unauthorized request</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          case 403:
+            content.innerHTML = `<h3>Forbidden request</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          case 500:
+            content.innerHTML = `<h3>Bad request</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          case 501:
+            content.innerHTML = `<h3>Not implemented</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          case 404:
+            content.innerHTML = `<h3>Resource not found</h3> <div><p>${obj.getElementsByTagName('message')[0].innerHTML}</p></div>`;
+            break;
+          default:
+            content.innerHTML = `<h3>Error code not implemented</h3>`;
+            break;
+        }
+      }
+      console.log(obj);
+      
+      e.preventDefault();
+      return false;
+    }
+    const sendAjax = (e, url) => {
+      const xhr = new XMLHttpRequest();
+
+      console.log(url);
+      if(url === '/addUser'){
+        console.log('adding user');
+
+        //url = url += `?name=${nameValue}&age=${ageValue}`;
+        xhr.open('POST', url);
+        var requestType = 'application/json';
+
+        var params = JSON.stringify({ 'name': nameValue, 'age': ageValue});
+
+        xhr.setRequestHeader("Accept", requestType);
+        xhr.setRequestHeader("Content-Type", 'application/x-www-form-urlencoded');
+        xhr.onload = () => handleResponse(e, xhr);
+        //xhr.send(params);
+        xhr.send(`name=${nameValue}&age=${ageValue}`);
+      }
+      else{
+        console.log('HI');
+        const requestTypeSelector = document.querySelector('#methodSelect');
+        var requestType = requestTypeSelector.options[requestTypeSelector.selectedIndex].value;
+        
+        console.log(requestType);
+        if(requestType === "HEAD"){
+          xhr.open('HEAD', url);
+
+          
+          var requestType = 'application/json';
+          console.log(requestType);
+
+          xhr.setRequestHeader("Accept", requestType);
+          xhr.onload = () => handleResponse(e, xhr);
+          xhr.send();
+        }
+        else{
+          console.log('WHAT');
+          xhr.open('GET', url);
+
+          
+          var requestType = 'application/json';
+          console.log(requestType);
+
+          xhr.setRequestHeader("Accept", requestType);
+          xhr.onload = () => handleResponse(e, xhr);
+          xhr.send();
+        }
+      }
+
+      e.preventDefault();
+      return false;
+    }
+
+    window.onload = init;
   </script>
 </head>
 <body>
@@ -17,7 +172,7 @@
       <input id="nameField" type="text" name="name" />
       <label for="age">Age: </label>
       <input id="ageField" type="number" name="age" min="0" max="100" step="1"/>
-      <input type="submit" value="Add User" />
+      <input id="submitUser" type="submit" value="Add User" />
     </form>
     <form id="userForm" action="/getUsers" method="get">
       <select id='urlField'>
@@ -25,8 +180,8 @@
         <option value='/notReal'>/notReal</option>
       </select>
       <select id="methodSelect">
-        <option value="get">GET</option>
-        <option value="head">HEAD</option>
+        <option value="GET">GET</option>
+        <option value="HEAD">HEAD</option>
       </select>
       <input type="submit" value="Get User" />
     </form>
